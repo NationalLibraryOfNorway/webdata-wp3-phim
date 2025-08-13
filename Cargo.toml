@@ -1,0 +1,18 @@
+[package]
+name = "hashcalc"
+version = "0.0.1"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "hashcalc"
+crate-type = ["cdylib"]
+
+[dependencies]
+numpy = "0.25"
+pyo3 = { version = "0.25", features = ["extension-module"] }
+imagehash = "0.3.0"
+image = "0.24.9"
+
+[package.metadata.clippy]
+deny = ["clippy::all", "clippy::pedantic", "clippy::cargo"]
