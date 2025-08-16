@@ -4,7 +4,7 @@ description = "Default template for PDM package"
 authors = [
     {name = "Marie Roald", email = "marie.roald@nb.no"},
 ]
-dependencies = ["fastapi[standard]>=0.116.1", "uvicorn>=0.35.0", "python-multipart>=0.0.20", "numpy>=2.3.2"]
+dependencies = ["fastapi[standard]>=0.116.1", "uvicorn>=0.35.0", "python-multipart>=0.0.20", "numpy>=2.3.2", "pillow>=11.3.0"]
 requires-python = ">=3.13"
 readme = "README.md"
 license = {text = "GPL-3.0"}
@@ -25,7 +25,6 @@ select = ["I", "TCH"]
 
 [dependency-groups]
 dev = [
-    "pillow>=11.3.0",
     "pytest>=8.4.1",
     "ruff>=0.12.9",
 ]

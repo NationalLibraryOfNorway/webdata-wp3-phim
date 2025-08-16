@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:9ea5ba2d52badd15663568eb303320db4c22042da06cb728c3b821d50dee0709"
+content_hash = "sha256:be5090ddd609700e284f6b42300fe03ae4caab49ba1e6c10bafa43da1fb48f4d"
 
 [[metadata.targets]]
 requires_python = ">=3.13"
@@ -415,7 +415,7 @@ name = "pillow"
 version = "11.3.0"
 requires_python = ">=3.9"
 summary = "Python Imaging Library (Fork)"
-groups = ["dev"]
+groups = ["default"]
 files = [
     {file = "pillow-11.3.0-cp313-cp313-ios_13_0_arm64_iphoneos.whl", hash = "sha256:1c627742b539bba4309df89171356fcb3cc5a9178355b2727d1b74a6cf155fbd"},
     {file = "pillow-11.3.0-cp313-cp313-ios_13_0_arm64_iphonesimulator.whl", hash = "sha256:30b7c02f3899d10f13d7a48163c8969e4e653f8b43416d23d13d1bbfdc93b9f8"},
