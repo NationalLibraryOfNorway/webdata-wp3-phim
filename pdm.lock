@@ -2,10 +2,10 @@
 # It is not intended for manual editing.
 
 [metadata]
-groups = ["default", "dev"]
+groups = ["default", "dev", "pdqhash"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:be5090ddd609700e284f6b42300fe03ae4caab49ba1e6c10bafa43da1fb48f4d"
+content_hash = "sha256:25d6b99cdbe27ed5881cb225e22123f4201e624d7d5a62710c2ea75051a0d186"
 
 [[metadata.targets]]
 requires_python = ">=3.13"
@@ -408,6 +408,17 @@ groups = ["dev"]
 files = [
     {file = "packaging-25.0-py3-none-any.whl", hash = "sha256:29572ef2b1f17581046b3a2227d5c611fb25ec70ca1ba8554b24b0e69331a484"},
     {file = "packaging-25.0.tar.gz", hash = "sha256:d443872c98d677bf60f6a1f2f8c1cb748e8fe762d2bf9d3148b5599295b0fc4f"},
+]
+
+[[package]]
+name = "pdqhash"
+version = "0.2.8"
+summary = "\"Python bindings for Facebook's PDQ hash\""
+groups = ["pdqhash"]
+files = [
+    {file = "pdqhash-0.2.8-cp313-cp313-macosx_10_13_universal2.whl", hash = "sha256:e7f50d8382a8850917a77232e00bc649b63db8e018423e6175842a226b01fad8"},
+    {file = "pdqhash-0.2.8-cp313-cp313-win_amd64.whl", hash = "sha256:b3f892a767708eb63a7b3498e23582a34890a0f2a31833d28fd16c355e1f0d4d"},
+    {file = "pdqhash-0.2.8.tar.gz", hash = "sha256:eb9a9de36745937ce3e481a02ce933fe907c84e0b1748c9dfea52c12ca5c1e35"},
 ]
 
 [[package]]

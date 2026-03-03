@@ -1,15 +1,16 @@
 from collections.abc import Generator
 from itertools import product
 
+import numpy as np
 import PIL.Image as Image
-from hashcalc.hashcalc import compute_phash, hamming_distance
+from hashcalc import compute_hamming_distance, compute_phash
 
 
 def test_same_image_gives_same_hash(sun_image: Image.Image) -> None:
     """Calculating the hash twice for the same image should yield the same result."""
     hash1 = compute_phash(sun_image)
     hash2 = compute_phash(sun_image)
-    assert hash1 == hash2
+    np.testing.assert_allclose(hash1, hash2)
 
 
 def test_same_image_different_file_type(
@@ -23,11 +24,11 @@ def test_same_image_different_file_type(
     """
 
     jpg_q100, jpg_q085, jpg_q050, _, _ = sun_images_jpg_compressed
-    hash = compute_phash(sun_image)
+    hash_ = compute_phash(sun_image)
 
-    assert hash == compute_phash(jpg_q100)
-    assert hash == compute_phash(jpg_q085)
-    assert hash == compute_phash(jpg_q050)
+    np.testing.assert_allclose(hash_, compute_phash(jpg_q100))
+    np.testing.assert_allclose(hash_, compute_phash(jpg_q085))
+    np.testing.assert_allclose(hash_, compute_phash(jpg_q050))
 
 
 def test_different_image_gives_different_hash(
@@ -36,7 +37,7 @@ def test_different_image_gives_different_hash(
     """Calculating the hash for two different images should yield different results."""
     hash1 = compute_phash(sun_image)
     hash2 = compute_phash(moon_image)
-    assert hash1 != hash2
+    assert not np.allclose(hash1, hash2)
 
 
 def test_same_images_more_similar_than_different_image(
@@ -51,6 +52,6 @@ def test_same_images_more_similar_than_different_image(
     for compressed_sun, compressed_mon in product(
         sun_images_jpg_compressed, moon_images_jpg_compressed
     ):
-        assert hamming_distance(hash, compute_phash(compressed_sun)) < hamming_distance(
-            hash, compute_phash(compressed_mon)
-        )
+        d1 = compute_hamming_distance(hash, compute_phash(compressed_sun))
+        d2 = compute_hamming_distance(hash, compute_phash(compressed_mon))
+        assert d1 < d2
