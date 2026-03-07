@@ -1,6 +1,6 @@
 [project]
 name = "phim"
-description = "Default template for PDM package"
+description = "Perceptual hashes for images"
 authors = [
     {name = "Marie Roald", email = "marie.roald@nb.no"},
 ]
@@ -36,7 +36,7 @@ dev = [
 
 
 [tool.bumpversion]
-current_version = "0.0.1"
+current_version = "0.0.2"
 
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]
