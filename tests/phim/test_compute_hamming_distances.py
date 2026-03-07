@@ -2,8 +2,8 @@ from typing import Any
 
 import numpy as np
 import pytest
-from hashcalc import compute_hamming_distances
 from numpy.typing import NDArray
+from phim import compute_hamming_distances
 
 
 def hamming_distance(a: int, b: int) -> int:

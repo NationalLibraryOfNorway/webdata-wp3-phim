@@ -4,7 +4,7 @@ from typing import Generator
 import numpy as np
 import PIL.Image as Image
 import pytest
-from hashcalc import (
+from phim import (
     compute_hamming_distance,
     compute_pdq_hashes,
 )

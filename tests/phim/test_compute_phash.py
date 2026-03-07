@@ -3,7 +3,7 @@ from itertools import product
 
 import numpy as np
 import PIL.Image as Image
-from hashcalc import compute_hamming_distance, compute_phash
+from phim import compute_hamming_distance, compute_phash
 
 
 def test_same_image_gives_same_hash(sun_image: Image.Image) -> None:

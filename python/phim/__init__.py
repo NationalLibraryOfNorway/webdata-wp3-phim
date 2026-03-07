@@ -10,7 +10,7 @@ import pdqhash
 from numpy.typing import NDArray
 from PIL import Image
 
-import hashcalc._native
+import phim._native
 
 __all__ = [
     "PDQHashOrder",
@@ -103,7 +103,7 @@ def compute_phash(img: Image.Image) -> int:
     """
     rgb_img = img.convert("RGB")
 
-    return hashcalc._native.compute_phash(np.ascontiguousarray(rgb_img))
+    return phim._native.compute_phash(np.ascontiguousarray(rgb_img))
 
 
 compute_p_hash = compute_phash
@@ -145,7 +145,7 @@ def compute_hamming_distances(
             f"The hashes have different lengths, {x.shape[0]=} not equal to {ys.shape[1]=}"
         )
 
-    return hashcalc._native.compute_bitwise_hamming_distances(
+    return phim._native.compute_bitwise_hamming_distances(
         x.astype(
             dtype=np.uint8,
             order="C",

@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-from hashcalc import compute_hamming_distance
 from numpy.typing import NDArray
+from phim import compute_hamming_distance
 
 
 @pytest.mark.parametrize(

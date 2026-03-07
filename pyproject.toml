@@ -1,11 +1,11 @@
 [project]
-name = "hashcalc"
+name = "phim"
 description = "Default template for PDM package"
 authors = [
     {name = "Marie Roald", email = "marie.roald@nb.no"},
 ]
 dependencies = ["fastapi[standard]>=0.116.1", "uvicorn>=0.35.0", "python-multipart>=0.0.20", "numpy>=2.3.2", "pillow>=11.3.0"]
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 readme = "README.md"
 license = {text = "GPL-3.0"}
 dynamic = ["version"]
@@ -22,7 +22,7 @@ build-backend = "maturin"
 [tool.maturin]
 features = ["pyo3/extension-module"]
 python-source = "python"
-module-name = "hashcalc._native"
+module-name = "phim._native"
 
 [tool.ruff.lint]
 select = ["I", "TCH"]
