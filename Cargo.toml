@@ -10,7 +10,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 numpy = "0.25"
-pyo3 = { version = "0.25", features = ["extension-module"] }
+pyo3 = { version = "0.25", features = ["extension-module", "abi3-py311", "generate-import-lib"] }
 imagehash = "0.3.0"
 image = "0.24.9"
 
