@@ -24,6 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.update_git.outputs.version }}
+    permissions:
+      id-token: write
     steps:
       - name: Checkout the code
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
