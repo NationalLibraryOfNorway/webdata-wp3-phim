@@ -133,7 +133,7 @@ jobs:
     name: Build wheels Windows (${{ matrix.target }})
     strategy:
       matrix:
-        target: [x64, x86]
+        target: [x64]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
