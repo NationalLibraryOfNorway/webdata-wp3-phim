@@ -31,6 +31,7 @@ select = ["I", "TCH"]
 dev = [
     "pytest>=8.4.1",
     "ruff>=0.12.9",
+    "pytest-cov>=7.0.0",
 ]
 
 
