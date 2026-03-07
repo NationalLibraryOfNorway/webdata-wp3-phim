@@ -18,22 +18,36 @@ def test_same_image_gives_same_hash(sun_image: Image.Image) -> None:
     assert quality1 == quality2
 
 
+def assert_same_hashes_and_quality(
+    hashes1, quality1, hashes2, quality2, tolerance
+) -> None:
+    assert quality1 == quality2
+    for h1, h2 in zip(hashes1, hashes2):
+        assert compute_hamming_distance(h1, h2) <= tolerance
+
+
 def test_same_image_different_file_type(
     sun_image: Image.Image,
     sun_images_jpg_compressed: Generator[Image.Image, None, None],
 ) -> None:
-    """Calculating the hash and quality for the same image with different file types should yield the same result.
+    """Calculating the hash for the same image with different file types should yield approximately the same hash.
 
     We verify this by comparing the hash of the original image with the hash of the JPEG-compressed version
-    (compressed with 100% quality)
+    (compressed with 100% quality, 85% quality and 50% quality)
     """
 
-    jpg_q100, _, _, _, _ = sun_images_jpg_compressed
-    hashes_original, _quality = compute_pdq_hashes(sun_image)
+    jpg_q100, jpg_q085, jpg_q050, _, _ = sun_images_jpg_compressed
+    hash, quality = compute_pdq_hashes(sun_image)
 
-    hashes_compressed, _quality = compute_pdq_hashes(jpg_q100)
-    for hash_org, hash_compressed in zip(hashes_original, hashes_compressed):
-        assert compute_hamming_distance(hash_org, hash_compressed) < 10
+    assert_same_hashes_and_quality(
+        hash, quality, *compute_pdq_hashes(jpg_q100), tolerance=8
+    )
+    assert_same_hashes_and_quality(
+        hash, quality, *compute_pdq_hashes(jpg_q085), tolerance=8
+    )
+    assert_same_hashes_and_quality(
+        hash, quality, *compute_pdq_hashes(jpg_q050), tolerance=8
+    )
 
 
 def test_different_image_gives_different_hash(
@@ -50,18 +64,18 @@ def test_same_images_more_similar_than_different_image(
     sun_images_jpg_compressed: Generator[Image.Image, None, None],
     moon_images_jpg_compressed: Generator[Image.Image, None, None],
 ) -> None:
-    """Hash of the same image with different compressions should always be closed than different image"""
+    """Hash of the same image with different compressions should always be closer than different image"""
 
     hashes = compute_pdq_hashes(sun_image)[0]
 
-    for compressed_sun, compressed_mon in product(
+    for compressed_sun, compressed_moon in product(
         sun_images_jpg_compressed, moon_images_jpg_compressed
     ):
         d1 = compute_hamming_distance(
             hashes[0], compute_pdq_hashes(compressed_sun)[0][0]
         )
         d2 = compute_hamming_distance(
-            hashes[0], compute_pdq_hashes(compressed_mon)[0][0]
+            hashes[0], compute_pdq_hashes(compressed_moon)[0][0]
         )
         assert d1 < d2
 
