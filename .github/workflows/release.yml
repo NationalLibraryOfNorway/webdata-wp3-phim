@@ -1,0 +1,163 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump-type:
+        description: 'Bump type'
+        required: true
+        default: 'patch'
+        type: choice
+        options:
+        - major
+        - minor
+        - patch
+
+env:
+  PYTHON_TARGETS: '3.11 3.12 3.13 3.14'
+  SDIST_BUILD_PLATFORM: 'x86_64'
+  PYO3_NO_PYTHON: TRUE
+
+jobs:
+  bump_version:
+    environment: pypi
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.update_git.outputs.version }}
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          persist-credentials: false
+
+      - name: Set git config
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Bump version
+        run: pipx run bump-my-version bump ${{ inputs.bump-type }}
+
+      - name: Push to github
+        run: git push && git push --tags
+
+      - name: Create release
+        id: update_git
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          export VERSION=$(pipx run toml-cli get --toml-path Cargo.toml package.version)
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          gh release create "v$VERSION" \
+              --repo="$GITHUB_REPOSITORY" \
+              --title="Stringalign ${VERSION}" \
+              --generate-notes
+
+
+  build-linux:
+    needs: [bump_version]
+    runs-on: ubuntu-latest
+    name: Build wheels linux (${{ matrix.target }})
+    strategy:
+      matrix:
+        target:
+          - x86_64
+          - i686
+          - aarch64
+          - armv7
+          - s390x
+          - ppc64le
+          - x86_64-unknown-linux-musl
+          - i686-unknown-linux-musl
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: 'v${{ needs.bump_version.outputs.version }}'
+          persist-credentials: false
+      - name: Build wheels
+        if: ${{ matrix.target != '${{ env.SDIST_BUILD_PLATFORM }}' }}
+        uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad
+        with:
+          rust-toolchain: stable
+          target: ${{ matrix.target }}
+          manylinux: auto
+          args: --release --out dist -i "${{ env.PYTHON_TARGETS }}"
+      - name: Build wheels and sdist
+        if: ${{ matrix.target == '${{ env.SDIST_BUILD_PLATFORM }}' }}
+        uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad
+        with:
+          rust-toolchain: stable
+          target: ${{ matrix.target }}
+          manylinux: auto
+          args: --release --out dist --sdist -i "${{ env.PYTHON_TARGETS }}"
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: maturin-wheels-linux-${{ matrix.target }}
+          path: dist/*.whl
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        if: ${{ matrix.target == '${{ env.SDIST_BUILD_PLATFORM }}' }}
+        with:
+          name: maturin-sdist
+          path: dist/*.tar.gz
+
+  build-macos:
+    needs: [bump_version]
+    runs-on: macos-latest
+    name: Build wheels macOS (${{ matrix.target }})
+    strategy:
+      matrix:
+        target: [universal2-apple-darwin, x86_64]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: 'v${{ needs.bump_version.outputs.version }}'
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
+      - name: Build wheels - x86_64
+        uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist -i "${{ env.PYTHON_TARGETS }}"
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: maturin-wheels-macos-${{ matrix.target }}
+          path: dist/*.whl
+
+  build-windows:
+    needs: [bump_version]
+    runs-on: windows-latest
+    name: Build wheels Windows (${{ matrix.target }})
+    strategy:
+      matrix:
+        target: [x64, x86]
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+        with:
+          ref: 'v${{ needs.bump_version.outputs.version }}'
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
+      - name: Build wheels
+        uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist -i "${{ env.PYTHON_TARGETS }}"
+      - uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
+        with:
+          name: maturin-wheels-windows-${{ matrix.target }}
+          path: dist/*.whl
+
+  upload_pypi:
+    needs: [build-linux, build-macos, build-windows]
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      id-token: write
+
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          path: dist
+          merge-multiple: true
+
+      - uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e
