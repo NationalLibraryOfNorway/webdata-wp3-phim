@@ -4,9 +4,11 @@ All functions wrap implementations in low-level languages (Rust for pHash and ha
 """
 
 from enum import Enum
+from typing import Callable
 
 import numpy as np
 import pdqhash
+import scipy
 from numpy.typing import NDArray
 from PIL import Image
 
@@ -77,33 +79,56 @@ def compute_pdq_hashes(img: Image.Image) -> tuple[NDArray[np.uint8], int]:
     return np.packbits(hash_vectors, axis=1), quality
 
 
-def compute_phash(img: Image.Image) -> int:
+def compute_phash(
+    image: Image.Image,
+    hash_size: int = 8,
+    dct_size: int = 32,
+    antialias: int = Image.Resampling.LANCZOS,
+    threshold_fn: Callable[[np.ndarray], float] = np.median,
+) -> np.typing.NDArray[np.uint8]:
     """Compute the pHash (DCT) of an image.
 
     The pHash is based on the discrete cosine transform (DCT) of the image. In particular, the image is resized to
-    32 x 32 pixels.
-    Then, we compute the DCT of the image and get the 64 lowest frequencies (8-by-8 pixel square).
+    32 x 32 pixels by default (hash_size x hash_size).
+    Then, we compute the DCT of the image and get the 64 lowest frequencies omitting the lowest ones (8-by-8 pixel
+    square shifted one row and column from the top left by default. hash_size x hash_size in general).
     Finally, we find the average value of these frequencies, and threshold the DCT matrix based on it to get a binary
     pattern, which constitutes our 64-bit hash.
 
     For more information, see Chapter 3.2.1 of Christoph Zauner's master's thesis:
     https://www.phash.org/docs/pubs/thesis_zauner.pdf
 
-    This implementation wraps the imagehash rust crate: https://docs.rs/imagehash/latest/imagehash/
-
     Parameters
     ----------
     img:
         Pillow image we want to compute the pHash for
+    hash_size:
+        Number of bytes in the hash. 8 by default.
+    dct_size:
+        The size that the image is resized to before computing the dct. 32 by default.
+        Note that the `dct_size` needs to be at least hash_size+1`.
+    antialias:
+        Antialias method used when resizing. `Image.Resampling.LANCZOS` by default.
+    threshold_fn:
+        Function used to find threshold for binarizing the dct.
+
 
     Returns
     -------
     NDArray[np.uint8]
-        A length 8 one-dimensional numpy array representing the pHash of the input image.
+        A length `hash_size^2/8` one-dimensional numpy array representing the pHash of the input image.
     """
-    rgb_img = img.convert("RGB")
+    if dct_size < hash_size + 1:
+        raise ValueError(
+            f"`dct_size` needs to be at least `hash_size+1`, got `{dct_size =}` and `{hash_size+1 =}`"
+        )
 
-    return phim._native.compute_phash(np.ascontiguousarray(rgb_img))
+    image = image.convert("L").resize((dct_size, dct_size), antialias)
+    pixels = np.asarray(image)
+    dct = scipy.fft.dctn(pixels, type=2, axes=(0, 1))[
+        1 : hash_size + 1, 1 : hash_size + 1
+    ]
+    return np.packbits(dct > threshold_fn(dct))
 
 
 compute_p_hash = compute_phash

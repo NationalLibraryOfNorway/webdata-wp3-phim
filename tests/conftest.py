@@ -57,3 +57,13 @@ def moon_images_jpg_compressed(data_directory) -> Generator[Image.Image, None, N
         open_image(img_path)
         for img_path in sorted(data_directory.glob("moon/moon*.jpg"), reverse=True)
     )
+
+
+@pytest.fixture
+def circles_image(data_directory) -> Image.Image:
+    return open_image(data_directory / "other/circles.jpg")
+
+
+@pytest.fixture
+def ocean_image(data_directory) -> Image.Image:
+    return open_image(data_directory / "other/ocean.jpg")

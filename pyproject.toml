@@ -4,16 +4,20 @@ description = "Perceptual hashes for images"
 authors = [
     {name = "Marie Roald", email = "marie.roald@nb.no"},
 ]
-dependencies = ["fastapi[standard]>=0.116.1", "uvicorn>=0.35.0", "python-multipart>=0.0.20", "numpy>=2.3.2", "pillow>=11.3.0"]
+dependencies = ["numpy>=1.24.0"]
 requires-python = ">=3.11"
 readme = "README.md"
 license = {text = "GPL-3.0"}
 dynamic = ["version"]
 
-
 [project.optional-dependencies]
 pdqhash = [
     "pdqhash>=0.2.8",
+    "pillow",
+]
+phash = [
+    "scipy",
+    "pillow"
 ]
 [build-system]
 requires = ["maturin>=1.7,<2.0"]
@@ -36,7 +40,7 @@ dev = [
 
 
 [tool.bumpversion]
-current_version = "0.0.2"
+current_version = "0.0.3"
 
 parse = "(?P<major>\\d+)\\.(?P<minor>\\d+)\\.(?P<patch>\\d+)"
 serialize = ["{major}.{minor}.{patch}"]

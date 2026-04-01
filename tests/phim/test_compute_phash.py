@@ -3,6 +3,7 @@ from itertools import product
 
 import numpy as np
 import PIL.Image as Image
+import pytest
 from phim import compute_hamming_distance, compute_phash
 
 
@@ -14,8 +15,8 @@ def test_same_image_gives_same_hash(sun_image: Image.Image) -> None:
 
 
 def test_same_image_different_file_type(
-    sun_image: Image.Image,
-    sun_images_jpg_compressed: Generator[Image.Image, None, None],
+    moon_image: Image.Image,
+    moon_images_jpg_compressed: Generator[Image.Image, None, None],
 ) -> None:
     """Calculating the hash for the same image with different file types should yield the same result.
 
@@ -23,8 +24,8 @@ def test_same_image_different_file_type(
     (compressed with 100% quality, 85% quality and 50% quality)
     """
 
-    jpg_q100, jpg_q085, jpg_q050, _, _ = sun_images_jpg_compressed
-    hash_ = compute_phash(sun_image)
+    jpg_q100, jpg_q085, jpg_q050, _, _ = moon_images_jpg_compressed
+    hash_ = compute_phash(moon_image)
 
     np.testing.assert_allclose(hash_, compute_phash(jpg_q100))
     np.testing.assert_allclose(hash_, compute_phash(jpg_q085))
@@ -55,3 +56,14 @@ def test_same_images_more_similar_than_different_image(
         d1 = compute_hamming_distance(hash, compute_phash(compressed_sun))
         d2 = compute_hamming_distance(hash, compute_phash(compressed_mon))
         assert d1 < d2
+
+
+@pytest.mark.parametrize("rotation", [0, 90, 180, 270])
+def test_half_different_image_gives_different_hash(
+    ocean_image: Image.Image, circles_image: Image.Image, rotation: int
+) -> None:
+    """Calculating the hash for two different images should yield different results."""
+    hash1 = compute_phash(ocean_image.rotate(rotation))
+    hash2 = compute_phash(circles_image.rotate(rotation))
+
+    assert not np.allclose(hash1, hash2)
