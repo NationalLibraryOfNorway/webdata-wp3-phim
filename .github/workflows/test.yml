@@ -27,13 +27,12 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: true
-          cache-dependency-path: pylock.toml
       - name: Setup rust
         uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
       - name: Run pre-commit hooks
         uses: pre-commit/action@2c7b3805fd2a0fd8c1884dcaebf91fc102a13ecd
       - name: Install project
-        run: pdm install --with pdqhash
+        run: pdm sync
       - name: Run unit tests
         run: pdm run pytest --cov python
 
