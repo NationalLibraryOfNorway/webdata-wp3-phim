@@ -41,7 +41,7 @@ The pHash algorithm is very similar, but it's a bit older and has only 64 bits.
 Another difference between the PDQ-hash and the pHash is that the PDQ-hash computes the hash for all eight possible 90 degree rotation/mirror combinations by smartly transforming the DCT.
 The same trick could, in theory, be applied during the pHash calculations as well, but it is in general not supported by most implementations (including this one).
 
-Phim has direct bindings for the pHash (via the [`imagehash`](https://docs.rs/imagehash/latest/imagehash/) Rust crate), and it provides a unified interface to the PDQ-hash as well.
+Phim comes with an efficient pHash implementation and provides a unified interface to the PDQ-hash as well.
 However, for the PDQ-hash you also need to install the `pdqhash` Python library, which binds the reference C++ implementation of the PDQ-hash made by the Facebook Threat Exchange.
 
 ## Example

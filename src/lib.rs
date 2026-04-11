@@ -1,29 +1,10 @@
 use pyo3::{prelude::*};
-use imagehash;
-use image;
 use numpy::PyReadonlyArray1;
 use numpy::PyReadonlyArray2;
-use numpy::PyReadonlyArray3;
 use numpy::ndarray::ArrayView1;
 use numpy::ndarray::ArrayView2;
-use numpy::ndarray::ArrayView3;
 use numpy::PyArray1;
 use numpy::IntoPyArray;
-
-
-fn numpy_to_image_buffer(image_array: PyReadonlyArray3<u8>) ->  PyResult<image::RgbImage> {
-    let image_view: ArrayView3<u8> = image_array.as_array();
-    let height = image_view.shape()[0] as u32;
-    let width = image_view.shape()[1] as u32;
-    let raw_data = image_view.flatten().to_vec();
-
-    let img: image::RgbImage =
-        image::RgbImage::from_vec(width, height, raw_data,)
-        .ok_or_else(|| pyo3::exceptions::PyValueError::new_err("Failed to create ImageBuffer"))?;
-
-    Ok(img)
-}
-
 
 // ----------------------------------------------------------------------------------------------------------
 // Copied from https://github.com/emschwartz/hamming-bitwise-fast/blob/main/src/lib.rs.
@@ -125,33 +106,8 @@ pub fn compute_bitwise_hamming_distances<'py>(py: Python<'py>, x: PyReadonlyArra
 }
 
 
-
-#[pyfunction]
-#[pyo3(signature = (image_array, /))]
-fn compute_phash<'py>(py: Python<'py>, image_array: PyReadonlyArray3<u8>) -> PyResult<Bound<'py, PyArray1<u8>>> {
-    // 1. Get image buffer
-    // 2. Convert image buffer to DynamicImage and store in img
-    // From DynamicImage docs: DynamicImage::ImageRgb8(rgb)
-
-    let img_buffer: image::RgbImage = numpy_to_image_buffer(image_array)?;
-    let img = image::DynamicImage::ImageRgb8(img_buffer);
-
-    let hasher = imagehash::PerceptualHash::new()
-        .with_image_size(32, 32)
-        .with_hash_size(8, 8)
-        .with_resizer(|img, w, h| {
-            img.resize_exact(w as u32, h as u32, image::imageops::FilterType::Lanczos3)
-        });
-    let hash = hasher.hash(&img);
-    let bytes = hash.to_bytes();
-    Ok(bytes.into_pyarray(py))
-}
-
-
-
 #[pymodule]
 fn _native(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(compute_phash, m)?)?;
     m.add_function(wrap_pyfunction!(compute_bitwise_hamming_distance, m)?)?;
     m.add_function(wrap_pyfunction!(compute_bitwise_hamming_distances, m)?)?;
     Ok(())
