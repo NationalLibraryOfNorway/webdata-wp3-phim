@@ -7,8 +7,6 @@ from enum import Enum
 from typing import Callable
 
 import numpy as np
-import pdqhash
-import scipy
 from numpy.typing import NDArray
 from PIL import Image
 
@@ -75,6 +73,9 @@ def compute_pdq_hashes(img: Image.Image) -> tuple[NDArray[np.uint8], int]:
     int
         The image quality metric (0 <= q <= 100)
     """
+    # Import here since pdqhash is an optional dependency
+    import pdqhash  # noqa: I
+
     hash_vectors, quality = pdqhash.compute_dihedral(np.array(img))
     return np.packbits(hash_vectors, axis=1), quality
 
@@ -118,6 +119,9 @@ def compute_phash(
     NDArray[np.uint8]
         A length `hash_size^2/8` one-dimensional numpy array representing the pHash of the input image.
     """
+    # Import here since scipy is an optional dependency
+    import scipy  # noqa: I
+
     if dct_size < hash_size + 1:
         raise ValueError(
             f"`dct_size` needs to be at least `hash_size+1`, got `{dct_size =}` and `{hash_size+1 =}`"
