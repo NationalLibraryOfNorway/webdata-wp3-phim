@@ -71,8 +71,8 @@ import PIL.Image as Image
 img1 = Image.open(...)
 img2 = Image.open(...)
 
-pdq_hash_combos1, quality1 = phim.compute_pdq_hash(img1)
-pdq_hash_combos2, quality2 = phim.compute_pdq_hash(img2)
+pdq_hash_combos1, quality1 = phim.compute_pdq_hashes(img1.convert("RGB"))
+pdq_hash_combos2, quality2 = phim.compute_pdq_hashes(img2.convert("RGB"))
 
 differing_bits = phim.compute_hamming_distances(pdq_hash_combos1[0], pdq_hash_combos2)
 print(f"There are {min(differing_bits)} differing bits between the two PDQ-hashes")
@@ -83,13 +83,14 @@ print(f"There are {min(differing_bits)} differing bits between the two PDQ-hashe
 ```python
 import phim
 import PIL.Image as Image
+import numpy as np
 
 image_paths = ...
 images = [Image.open(p) for p in image_paths]
 query_img = Image.open(...)
 
 phash = phim.compute_phash(query_img)
-phashes = [phim.compute_phash(img) for img in images]
+phashes = np.stack([phim.compute_phash(img) for img in images])
 
 differing_bits = phim.compute_hamming_distances(phash, phashes)
 most_similar_index = differing_bits.argmin()
