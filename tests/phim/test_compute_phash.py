@@ -32,9 +32,7 @@ def test_same_image_different_file_type(
     np.testing.assert_allclose(hash_, compute_phash(jpg_q050))
 
 
-def test_different_image_gives_different_hash(
-    sun_image: Image.Image, moon_image: Image.Image
-) -> None:
+def test_different_image_gives_different_hash(sun_image: Image.Image, moon_image: Image.Image) -> None:
     """Calculating the hash for two different images should yield different results."""
     hash1 = compute_phash(sun_image)
     hash2 = compute_phash(moon_image)
@@ -50,9 +48,7 @@ def test_same_images_more_similar_than_different_image(
 
     hash = compute_phash(sun_image)
 
-    for compressed_sun, compressed_mon in product(
-        sun_images_jpg_compressed, moon_images_jpg_compressed
-    ):
+    for compressed_sun, compressed_mon in product(sun_images_jpg_compressed, moon_images_jpg_compressed):
         d1 = compute_hamming_distance(hash, compute_phash(compressed_sun))
         d2 = compute_hamming_distance(hash, compute_phash(compressed_mon))
         assert d1 < d2
@@ -67,3 +63,15 @@ def test_half_different_image_gives_different_hash(
     hash2 = compute_phash(circles_image.rotate(rotation))
 
     assert not np.allclose(hash1, hash2)
+
+
+def test_black_and_transparent_gets_nonzero_hash(black_spiral_image: Image.Image) -> None:
+    """An all black image on transparent background should get nonzero hash"""
+    hash_ = compute_phash(black_spiral_image)
+    assert hash_.any()
+
+
+def test_white_and_transparent_gets_nonzero_hash(white_spiral_image: Image.Image) -> None:
+    """An all white image on transparent background should get nonzero hash"""
+    hash_ = compute_phash(white_spiral_image)
+    assert hash_.any()

@@ -86,6 +86,7 @@ def compute_phash(
     dct_size: int = 32,
     antialias: int = Image.Resampling.LANCZOS,
     threshold_fn: Callable[[np.ndarray], float] = np.median,
+    handle_all_black_and_transparent_images: bool = True,
 ) -> np.typing.NDArray[np.uint8]:
     """Compute the pHash (DCT) of an image.
 
@@ -112,7 +113,12 @@ def compute_phash(
         Antialias method used when resizing. `Image.Resampling.LANCZOS` by default.
     threshold_fn:
         Function used to find threshold for binarizing the dct.
-
+    handle_all_black_and_transparent_images:
+        If True, then the hash for images with only black and transparent pixels will be computed by alpha-compositing
+        the image onto a white background. This is neccessary as Pillow by default composites the alpha channel over
+        black when it's removed. For black images, this leads to a completely black image, and an all-zero hash.
+        Therefore, if ``image`` has transparency and the a black backround leads to a zero-valued hash, then the image
+        will be alpha-composited onto a white background instead.
 
     Returns
     -------
@@ -123,24 +129,26 @@ def compute_phash(
     import scipy  # noqa: I
 
     if dct_size < hash_size + 1:
-        raise ValueError(
-            f"`dct_size` needs to be at least `hash_size+1`, got `{dct_size =}` and `{hash_size+1 =}`"
-        )
+        raise ValueError(f"`dct_size` needs to be at least `hash_size+1`, got `{dct_size =}` and `{hash_size+1 =}`")
 
-    image = image.convert("L").resize((dct_size, dct_size), antialias)
-    pixels = np.asarray(image)
-    dct = scipy.fft.dctn(pixels, type=2, axes=(0, 1))[
-        1 : hash_size + 1, 1 : hash_size + 1
-    ]
+    image = image.resize((dct_size, dct_size), antialias)
+    greyscale_image = image.convert("L")
+    dct = scipy.fft.dctn(np.asarray(greyscale_image), type=2, axes=(0, 1))[1 : hash_size + 1, 1 : hash_size + 1]
+
+    # For transparent images: alpha-composite over white instead of black for all-zero hashes (see docstring).
+    if image.has_transparency_data and handle_all_black_and_transparent_images and not dct.any():
+        white_background = Image.new("LA", (dct_size, dct_size), color="white")
+        white_background.alpha_composite(image.convert("LA"))
+        white_background.convert("L")
+        dct = scipy.fft.dctn(np.asarray(white_background), type=2, axes=(0, 1))[1 : hash_size + 1, 1 : hash_size + 1]
+
     return np.packbits(dct > threshold_fn(dct))
 
 
 compute_p_hash = compute_phash
 
 
-def compute_hamming_distances(
-    x: NDArray[np.uint8], ys: NDArray[np.uint8]
-) -> NDArray[np.uint32]:
+def compute_hamming_distances(x: NDArray[np.uint8], ys: NDArray[np.uint8]) -> NDArray[np.uint32]:
     """Compute the hamming distance between ``x`` and each row of ``ys``.
 
     The hamming distance between two bit-vectors is the number of differing bits.
@@ -170,9 +178,7 @@ def compute_hamming_distances(
     if ys.ndim != 2:
         raise ValueError(f"ys must be two dimensional, got {ys.ndim=}")
     if x.shape[0] != ys.shape[1]:
-        raise ValueError(
-            f"The hashes have different lengths, {x.shape[0]=} not equal to {ys.shape[1]=}"
-        )
+        raise ValueError(f"The hashes have different lengths, {x.shape[0]=} not equal to {ys.shape[1]=}")
 
     return phim._native.compute_bitwise_hamming_distances(
         x.astype(
@@ -215,15 +221,11 @@ def compute_hamming_distance(x: NDArray[np.uint8], y: NDArray[np.uint8]) -> int:
     if x.ndim != 1:
         raise ValueError(f"x must be one dimensional, got {x.ndim=}")
     if y.ndim == 2:
-        raise ValueError(
-            f"y must be one dimensional, if you have multiple y, use compute_hamming_distances"
-        )
+        raise ValueError(f"y must be one dimensional, if you have multiple y, use compute_hamming_distances")
     elif y.ndim != 1:
         raise ValueError(f"y must be one dimensional, got {y.ndim=}")
 
     if x.shape[0] != y.shape[0]:
-        raise ValueError(
-            f"The hashes have different lengths, {x.shape[0]=} not equal to {y.shape[0]=}"
-        )
+        raise ValueError(f"The hashes have different lengths, {x.shape[0]=} not equal to {y.shape[0]=}")
 
     return int(compute_hamming_distances(x, y.reshape((1, -1))).item())

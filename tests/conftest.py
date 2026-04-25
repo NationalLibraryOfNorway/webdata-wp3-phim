@@ -31,10 +31,7 @@ def sun_images_jpg_compressed(data_directory) -> Generator[Image.Image, None, No
         - sun.q010.jpg - compressed with quality = 10%
         - sun.q001.jpg - compressed with quality = 1%
     """
-    return (
-        open_image(img_path)
-        for img_path in sorted(data_directory.glob("sun/sun*.jpg"), reverse=True)
-    )
+    return (open_image(img_path) for img_path in sorted(data_directory.glob("sun/sun*.jpg"), reverse=True))
 
 
 @pytest.fixture
@@ -53,10 +50,7 @@ def moon_images_jpg_compressed(data_directory) -> Generator[Image.Image, None, N
         - moon.q010.jpg - compressed with quality = 10%
         - moon.q001.jpg - compressed with quality = 1%
     """
-    return (
-        open_image(img_path)
-        for img_path in sorted(data_directory.glob("moon/moon*.jpg"), reverse=True)
-    )
+    return (open_image(img_path) for img_path in sorted(data_directory.glob("moon/moon*.jpg"), reverse=True))
 
 
 @pytest.fixture
@@ -67,3 +61,13 @@ def circles_image(data_directory) -> Image.Image:
 @pytest.fixture
 def ocean_image(data_directory) -> Image.Image:
     return open_image(data_directory / "other/ocean.jpg")
+
+
+@pytest.fixture
+def black_spiral_image(data_directory) -> Image.Image:
+    return open_image(data_directory / "other/spiral_b.png")
+
+
+@pytest.fixture
+def white_spiral_image(data_directory) -> Image.Image:
+    return open_image(data_directory / "other/spiral_w.png")
