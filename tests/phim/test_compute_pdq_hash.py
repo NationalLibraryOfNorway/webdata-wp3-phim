@@ -18,9 +18,7 @@ def test_same_image_gives_same_hash(sun_image: Image.Image) -> None:
     assert quality1 == quality2
 
 
-def assert_same_hashes_and_quality(
-    hashes1, quality1, hashes2, quality2, tolerance
-) -> None:
+def assert_same_hashes_and_quality(hashes1, quality1, hashes2, quality2, tolerance) -> None:
     assert quality1 == quality2
     for h1, h2 in zip(hashes1, hashes2):
         assert compute_hamming_distance(h1, h2) <= tolerance
@@ -39,20 +37,12 @@ def test_same_image_different_file_type(
     jpg_q100, jpg_q085, jpg_q050, _, _ = sun_images_jpg_compressed
     hash, quality = compute_pdq_hashes(sun_image)
 
-    assert_same_hashes_and_quality(
-        hash, quality, *compute_pdq_hashes(jpg_q100), tolerance=8
-    )
-    assert_same_hashes_and_quality(
-        hash, quality, *compute_pdq_hashes(jpg_q085), tolerance=8
-    )
-    assert_same_hashes_and_quality(
-        hash, quality, *compute_pdq_hashes(jpg_q050), tolerance=8
-    )
+    assert_same_hashes_and_quality(hash, quality, *compute_pdq_hashes(jpg_q100), tolerance=8)
+    assert_same_hashes_and_quality(hash, quality, *compute_pdq_hashes(jpg_q085), tolerance=8)
+    assert_same_hashes_and_quality(hash, quality, *compute_pdq_hashes(jpg_q050), tolerance=8)
 
 
-def test_different_image_gives_different_hash(
-    sun_image: Image.Image, moon_image: Image.Image
-) -> None:
+def test_different_image_gives_different_hash(sun_image: Image.Image, moon_image: Image.Image) -> None:
     """Calculating the hash for two different images should yield different results."""
     hashes1 = compute_pdq_hashes(sun_image)[0]
     hashes2 = compute_pdq_hashes(moon_image)[0]
@@ -68,15 +58,9 @@ def test_same_images_more_similar_than_different_image(
 
     hashes = compute_pdq_hashes(sun_image)[0]
 
-    for compressed_sun, compressed_moon in product(
-        sun_images_jpg_compressed, moon_images_jpg_compressed
-    ):
-        d1 = compute_hamming_distance(
-            hashes[0], compute_pdq_hashes(compressed_sun)[0][0]
-        )
-        d2 = compute_hamming_distance(
-            hashes[0], compute_pdq_hashes(compressed_moon)[0][0]
-        )
+    for compressed_sun, compressed_moon in product(sun_images_jpg_compressed, moon_images_jpg_compressed):
+        d1 = compute_hamming_distance(hashes[0], compute_pdq_hashes(compressed_sun)[0][0])
+        d2 = compute_hamming_distance(hashes[0], compute_pdq_hashes(compressed_moon)[0][0])
         assert d1 < d2
 
 
@@ -93,9 +77,7 @@ def test_quality_zero_for_emtpy_image(image: Image.Image) -> None:
     assert quality == 0
 
 
-def test_quality_not_zero_for_nonemtpy_image(
-    sun_image: Image.Image, moon_image: Image.Image
-) -> None:
+def test_quality_not_zero_for_nonemtpy_image(sun_image: Image.Image, moon_image: Image.Image) -> None:
     """If the image is not blank, quality should be above non-zero"""
     for image in (sun_image, moon_image):
         _hashes, quality = compute_pdq_hashes(image)

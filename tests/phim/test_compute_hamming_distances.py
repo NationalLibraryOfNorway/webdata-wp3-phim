@@ -58,9 +58,7 @@ def test_invalid_datatypes_ys(ys: Any, error_type: type) -> None:
         np.array([[1], [0]], dtype=np.uint8),
     ],
 )
-def test_same_result_as_python_implementation_uint8(
-    x: NDArray[np.uint8], ys: NDArray[np.uint8]
-) -> None:
+def test_same_result_as_python_implementation_uint8(x: NDArray[np.uint8], ys: NDArray[np.uint8]) -> None:
     distances = compute_hamming_distances(x, ys)
     for distance, y in zip(distances, ys):
         assert distance == hamming_distance(int(x.squeeze()), int(y.squeeze()))
@@ -80,13 +78,9 @@ def test_same_result_as_python_implementation_uint8(
         np.array([[0, 0, 0, 0]], dtype=np.uint8),
     ],
 )
-def test_same_result_as_python_implementation_uint32(
-    x: NDArray[np.uint8], ys: NDArray[np.uint8]
-) -> None:
+def test_same_result_as_python_implementation_uint32(x: NDArray[np.uint8], ys: NDArray[np.uint8]) -> None:
     distances = compute_hamming_distances(x, ys)
     for distance, y in zip(distances, ys):
         x_uint32 = x.view(np.uint32)
         y_uint32 = y.view(np.uint32)
-        assert distance == hamming_distance(
-            int(x_uint32.squeeze()), int(y_uint32.squeeze())
-        )
+        assert distance == hamming_distance(int(x_uint32.squeeze()), int(y_uint32.squeeze()))
