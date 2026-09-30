@@ -53,7 +53,7 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           gh release create "v$VERSION" \
               --repo="$GITHUB_REPOSITORY" \
-              --title="Stringalign ${VERSION}" \
+              --title="Phim ${VERSION}" \
               --generate-notes
 
 
