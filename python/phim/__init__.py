@@ -139,7 +139,7 @@ def compute_phash(
     if image.has_transparency_data and handle_all_black_and_transparent_images and not dct.any():
         white_background = Image.new("LA", (dct_size, dct_size), color="white")
         white_background.alpha_composite(image.convert("LA"))
-        white_background.convert("L")
+        white_background = white_background.convert("L")
         dct = scipy.fft.dctn(np.asarray(white_background), type=2, axes=(0, 1))[1 : hash_size + 1, 1 : hash_size + 1]
 
     return np.packbits(dct > threshold_fn(dct))

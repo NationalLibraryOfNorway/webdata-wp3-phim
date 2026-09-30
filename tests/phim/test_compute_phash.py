@@ -75,3 +75,24 @@ def test_white_and_transparent_gets_nonzero_hash(white_spiral_image: Image.Image
     """An all white image on transparent background should get nonzero hash"""
     hash_ = compute_phash(white_spiral_image)
     assert hash_.any()
+
+
+def test_blank_image_gets_right_length() -> None:
+    """A blank RGBA image should get output with length 8.
+
+    This is a regression test that checks if the alpha-channel is removed when a zero-valued hash for images with alpha
+    channels. Images with an alpha-channel are composited on top of a black image (default). However, if this results in
+    a zero-valued hash, then it is also composited over a white background, to handle e.g. images that are only fully
+    black with transparency.
+
+    There was a bug in the alpha-compositing, where the alpha-channel was not stripped after compositing the images.
+    This led to the hash being 128 bits (16 bytes) long, instead of 64, as it was generated from two DCTs instead of
+    one.
+
+    We are using a blank image here and asserting that the hash zero to verify that the test in fact checks for our
+    regression.
+    """
+    blank_image = Image.new("RGBA", (100, 100), (255, 255, 255, 0))
+    hash_ = compute_phash(blank_image)
+    assert len(hash_) == 8
+    assert not hash_.any()
