@@ -1,7 +1,4 @@
-"""Utilities for comparing images with perceptual hashes.
-
-All functions wrap implementations in low-level languages (Rust for pHash and hamming distances, C++ for PDQ-hash).
-"""
+"""Utilities for comparing images with perceptual hashes."""
 
 from enum import Enum
 from typing import Callable
@@ -13,7 +10,7 @@ from PIL import Image
 import phim._native
 
 __all__ = [
-    "PDQHashOrder",
+    "DihedralTransformOrder",
     "compute_pdq_hashes",
     "compute_p_hash",
     "compute_hamming_distances",
@@ -21,8 +18,8 @@ __all__ = [
 ]
 
 
-class PDQHashOrder(Enum):
-    """Used to index the PDQ hash iterable to filter based on image transform."""
+class DihedralTransformOrder(Enum):
+    """Used to index the hash iterable when computing hashes for all flips and 90-degree rotations."""
 
     ORIGINAL = 0
     ROTATED_90 = 1
@@ -35,17 +32,11 @@ class PDQHashOrder(Enum):
 
 
 def compute_pdq_hashes(img: Image.Image) -> tuple[NDArray[np.uint8], int]:
-    """Compute eight PDQ-hashes for various transformations of the input image and the image quality.
+    """Compute eight PDQ-hashes for all eight 90-degree rotations and flips of the input image and the image quality.
 
     The PDQ-hash is a perceptual hash for images developed by Meta for image fingerprinting.
     It is very similar to the pHash algorithm, but it uses more bits per hash (256 bits instead of 64 bits).
     Consequently, two images must be very very similar to have an equal PDQ-hash.
-
-    A benefit with the PDQ-hash is that it is (also) based on the cosine transform, and the reference defines eight
-    transforms you get "for free" based on a single cosine transform: All four 90 degree rotations of an image with
-    horisontal and vertical flips.
-    You could, strictly speaking, get the same transforms for free with pHash, but most implementations do not utilise
-    these trics.
 
     The PDQ-hash also comes with a "quality" metric between 0 and 100.
     This metric is based on the sum of gradient magnitudes: more gradients mean higher quality.
@@ -68,7 +59,7 @@ def compute_pdq_hashes(img: Image.Image) -> tuple[NDArray[np.uint8], int]:
     -------
     NDArray[np.uint8]
         An 8x32 numpy array. The first axis corresponds to image transforms, and can be indexed with the
-        :class:`PDQHashOrder` enum and the second axis is the hash-axis.
+        :class:`DihedralTransformOrder` enum and the second axis is the hash-axis.
 
     int
         The image quality metric (0 <= q <= 100)
@@ -80,6 +71,34 @@ def compute_pdq_hashes(img: Image.Image) -> tuple[NDArray[np.uint8], int]:
     return np.packbits(hash_vectors, axis=1), quality
 
 
+def _compute_phash_dct(
+    image: Image.Image,
+    hash_size: int = 8,
+    dct_size: int = 32,
+    antialias: int = Image.Resampling.LANCZOS,
+    handle_all_black_and_transparent_images: bool = True,
+) -> NDArray:
+    """Compute the downscaled DCT used for pHash-calculations."""
+    # Import here since scipy is an optional dependency
+    import scipy  # noqa: I
+
+    if dct_size < hash_size + 1:
+        raise ValueError(f"`dct_size` needs to be at least `hash_size+1`, got `{dct_size =}` and `{hash_size+1 =}`")
+
+    image = image.resize((dct_size, dct_size), antialias)
+    greyscale_image = image.convert("L")
+    dct = scipy.fft.dctn(np.asarray(greyscale_image), type=2, axes=(0, 1))
+
+    # For transparent images: alpha-composite over white instead of black for all-zero hashes (see docstring).
+    if image.has_transparency_data and handle_all_black_and_transparent_images and not dct.any():
+        white_background = Image.new("LA", (dct_size, dct_size), color="white")
+        white_background.alpha_composite(image.convert("LA"))
+        white_background = white_background.convert("L")
+        dct = scipy.fft.dctn(np.asarray(white_background), type=2, axes=(0, 1))
+
+    return dct
+
+
 def compute_phash(
     image: Image.Image,
     hash_size: int = 8,
@@ -87,7 +106,7 @@ def compute_phash(
     antialias: int = Image.Resampling.LANCZOS,
     threshold_fn: Callable[[np.ndarray], float] = np.median,
     handle_all_black_and_transparent_images: bool = True,
-) -> np.typing.NDArray[np.uint8]:
+) -> NDArray[np.uint8]:
     """Compute the pHash (DCT) of an image.
 
     The pHash is based on the discrete cosine transform (DCT) of the image. In particular, the image is resized to
@@ -125,27 +144,96 @@ def compute_phash(
     NDArray[np.uint8]
         A length `hash_size^2/8` one-dimensional numpy array representing the pHash of the input image.
     """
-    # Import here since scipy is an optional dependency
-    import scipy  # noqa: I
-
-    if dct_size < hash_size + 1:
-        raise ValueError(f"`dct_size` needs to be at least `hash_size+1`, got `{dct_size =}` and `{hash_size+1 =}`")
-
-    image = image.resize((dct_size, dct_size), antialias)
-    greyscale_image = image.convert("L")
-    dct = scipy.fft.dctn(np.asarray(greyscale_image), type=2, axes=(0, 1))[1 : hash_size + 1, 1 : hash_size + 1]
-
-    # For transparent images: alpha-composite over white instead of black for all-zero hashes (see docstring).
-    if image.has_transparency_data and handle_all_black_and_transparent_images and not dct.any():
-        white_background = Image.new("LA", (dct_size, dct_size), color="white")
-        white_background.alpha_composite(image.convert("LA"))
-        white_background = white_background.convert("L")
-        dct = scipy.fft.dctn(np.asarray(white_background), type=2, axes=(0, 1))[1 : hash_size + 1, 1 : hash_size + 1]
+    dct = _compute_phash_dct(image, hash_size, dct_size, antialias, handle_all_black_and_transparent_images)[
+        1 : hash_size + 1, 1 : hash_size + 1
+    ]
 
     return np.packbits(dct > threshold_fn(dct))
 
 
 compute_p_hash = compute_phash
+
+
+def _process_dct_for_img_vflip(dct: NDArray) -> NDArray:
+    """Note: Modifies the array inplace."""
+    dct[1::2] *= -1
+    return dct
+
+
+def _process_dct_for_img_hflip(dct: NDArray) -> NDArray:
+    """Note: Modifies the array inplace."""
+    dct[:, 1::2] *= -1
+    return dct
+
+
+def _process_dct_for_img_transpose(dct: NDArray) -> NDArray:
+    return dct.T
+
+
+def compute_phashes(
+    image: Image.Image,
+    hash_size: int = 8,
+    dct_size: int = 32,
+    antialias: int = Image.Resampling.LANCZOS,
+    threshold_fn: Callable[[np.ndarray], float] = np.median,
+    handle_all_black_and_transparent_images: bool = True,
+) -> NDArray[np.uint8]:
+    """Efficiently compute the pHashes (DCT) for all eight 90-degree rotations and flips of an image. The ordering is the same as for the PDQ-hash.
+
+    This function is faster than computing eight pHashes from scratch, as it reuses and transforms the DCT for each of the eight transforms.
+
+    See the docstring of :func:`compute_phash` for information about the pHash.
+
+    Parameters
+    ----------
+    img:
+        Pillow image we want to compute the pHash for
+    hash_size:
+        Number of bytes in the hash. 8 by default.
+    dct_size:
+        The size that the image is resized to before computing the dct. 32 by default.
+        Note that the `dct_size` needs to be at least hash_size+1`.
+    antialias:
+        Antialias method used when resizing. `Image.Resampling.LANCZOS` by default.
+    threshold_fn:
+        Function used to find threshold for binarizing the dct.
+    handle_all_black_and_transparent_images:
+        If True, then the hash for images with only black and transparent pixels will be computed by alpha-compositing
+        the image onto a white background. This is neccessary as Pillow by default composites the alpha channel over
+        black when it's removed. For black images, this leads to a completely black image, and an all-zero hash.
+        Therefore, if ``image`` has transparency and the a black backround leads to a zero-valued hash, then the image
+        will be alpha-composited onto a white background instead.
+
+    Returns
+    -------
+    NDArray[np.uint8]
+        A length 8x`hash_size^2/8` numpy array. The first axis corresponds to image transforms, and can be indexed with the
+        :class:`DihedralTransformOrder` enum and the second axis is the hash-axis.
+    """
+    dct = _compute_phash_dct(image, hash_size, dct_size, antialias, handle_all_black_and_transparent_images)
+
+    hashes = np.empty((8, int((hash_size * hash_size) / 8)))
+
+    # Instead of making copies of the DCT and applying every transform for every iteration, we let each iteration mutate
+    # the DCT, making sure that we end up with all eight combinations of flipping vertically, horisontally and transposing.
+    # However, this ends up with a different ordering than that of PDQ-hash (which binds to the official C++ implementation),
+    # so we have an extra ordering that maps to the same order as the PDQ-hash transforms.
+    ordering = (0, 4, 2, 5, 1, 6, 3, 7)
+    for index, order_index in enumerate(ordering):
+        if index % 2 == 1:
+            dct = _process_dct_for_img_vflip(dct)
+        if index % 4 == 2:
+            dct = _process_dct_for_img_hflip(dct)
+        if index == 4:
+            dct = _process_dct_for_img_transpose(dct)
+
+        processed_dct = dct[1 : hash_size + 1, 1 : hash_size + 1]
+        hashes[order_index, :] = np.packbits(processed_dct > threshold_fn(processed_dct))
+
+    return hashes
+
+
+compute_p_hashes = compute_phashes
 
 
 def compute_hamming_distances(x: NDArray[np.uint8], ys: NDArray[np.uint8]) -> NDArray[np.uint32]:

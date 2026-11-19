@@ -12,8 +12,10 @@ RUN apt-get update && \
     python3 -m pipx ensurepath && \
     pipx install pre-commit && \
     curl -sSL https://pdm-project.org/install-pdm.py | python3 - && \
+    export PATH=/root/.local/bin:$PATH && \
     git config --global --add safe.directory '*' && \
     pdm config lock.format pylock
 
+ENV PATH=/root/.local/bin:$PATH
 ENV SHELL=bash
 CMD ["/bin/bash"]
