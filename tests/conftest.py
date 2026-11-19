@@ -54,6 +54,15 @@ def moon_images_jpg_compressed(data_directory) -> Generator[Image.Image, None, N
 
 
 @pytest.fixture
+def arrow_images(data_directory) -> Generator[Image.Image, None, None]:
+    """
+    Yields dihedral transforms of the arrow image.
+    The images are arranged following the pdq hash order.
+    """
+    return (open_image(img_path) for img_path in sorted(data_directory.glob("arrows/arrow*.png"), reverse=False))
+
+
+@pytest.fixture
 def circles_image(data_directory) -> Image.Image:
     return open_image(data_directory / "other/circles.jpg")
 
