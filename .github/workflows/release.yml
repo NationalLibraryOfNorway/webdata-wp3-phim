@@ -65,13 +65,11 @@ jobs:
       matrix:
         target:
           - x86_64
-          - i686
           - aarch64
           - armv7
           - s390x
           - ppc64le
           - x86_64-unknown-linux-musl
-          - i686-unknown-linux-musl
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
         with:
