@@ -214,23 +214,22 @@ def compute_phashes(
 
     hashes = np.empty((8, int((hash_size * hash_size) / 8)))
 
-    # We could speed this up and simplify it if we didn't care about matching with the PDQ-hash order
-    # however, it's nice if all hashes we compute follow the same ordering for the dihedral transforms,
-    # which is why we do it this way.
-    dihedral_transform_specs = ((0, 0, 0), (1, 0, 1), (0, 1, 1), (1, 1, 0), (0, 0, 1), (0, 1, 0), (1, 0, 0), (1, 1, 1))
-    for index, (should_transpose, should_hflip, should_vflip) in enumerate(dihedral_transform_specs):
-        # We could, instead of making copies, undo the DCT-processing for each iteration.
-        # However, it's unclear what's fastest without benchmarking, so we copy the DCT until this becomes a bottleneck.
-        processed_dct = dct.copy()
-        if should_transpose:
-            processed_dct = _process_dct_for_img_transpose(processed_dct)
-        if should_hflip:
-            processed_dct = _process_dct_for_img_hflip(processed_dct)
-        if should_vflip:
-            processed_dct = _process_dct_for_img_vflip(processed_dct)
+    # Instead of making copies of the DCT and applying every transform for every iteration, we let each iteration mutate
+    # the DCT, making sure that we end up with all eight combinations of flipping vertically, horisontally and transposing.
+    # However, this ends up with a different ordering than that of PDQ-hash (which binds to the official C++ implementation),
+    # so we have an extra ordering that maps to the same order as the PDQ-hash transforms.
+    ordering = (0, 4, 2, 5, 1, 6, 3, 7)
+    for index, order_index in enumerate(ordering):
+        if index % 2 == 1:
+            dct = _process_dct_for_img_vflip(dct)
+        if index % 4 == 2:
+            dct = _process_dct_for_img_hflip(dct)
+        if index == 4:
+            dct = _process_dct_for_img_transpose(dct)
 
-        processed_dct = processed_dct[1 : hash_size + 1, 1 : hash_size + 1]
-        hashes[index, :] = np.packbits(processed_dct > threshold_fn(processed_dct))
+        processed_dct = dct[1 : hash_size + 1, 1 : hash_size + 1]
+        hashes[order_index, :] = np.packbits(processed_dct > threshold_fn(processed_dct))
+
     return hashes
 
 
