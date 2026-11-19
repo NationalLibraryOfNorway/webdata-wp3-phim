@@ -56,7 +56,7 @@ jobs:
         persist-credentials: false
     - name: Build wheels
       if: ${{ matrix.target != 'x86_64' }}
-      uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad
+      uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b
       with:
         rust-toolchain: stable
         target: ${{ matrix.target }}
@@ -64,7 +64,7 @@ jobs:
         args: --release --out dist -i "${{ env.PYTHON_TARGETS }}"
     - name: Build wheels and sdist
       if: ${{ matrix.target == 'x86_64' }}
-      uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad
+      uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b
       with:
         rust-toolchain: stable
         target: ${{ matrix.target }}
@@ -84,7 +84,7 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@631a55b12751854ce901bb631d5902ceb48146f7
       - name: Build wheels - x86_64
-        uses: PyO3/maturin-action@04ac600d27cdf7a9a280dadf7147097c42b757ad
+        uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b
         with:
           target: ${{ matrix.target }}
           args: --release --out dist -i "${{ env.PYTHON_TARGETS }}"
